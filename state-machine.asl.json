@@ -1,1 +1,61 @@
-
+```json
+{
+  "Comment": "Assistente de Delivery - Recomendações com Amazon Bedrock",
+  "StartAt": "CapturarPedido",
+  "States": {
+    "CapturarPedido": {
+      "Type": "Pass",
+      "Comment": "Recebe o pedido do cliente e prepara para processamento",
+      "Parameters": {
+        "pedido.$": "$.pedido",
+        "contexto.$": "$.contexto",
+        "timestamp": "{{$Context.Execution.StartTime}}"
+      },
+      "Next": "ProcessarComBedrock"
+    },
+    
+    "ProcessarComBedrock": {
+      "Type": "Task",
+      "Comment": "Invoca o Amazon Bedrock via Lambda para processar o pedido",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:REGION:ACCOUNT_ID:function:assistente-delivery-bedrock",
+        "Payload": {
+          "pedido.$": "$.pedido",
+          "contexto.$": "$.contexto"
+        }
+      },
+      "ResultPath": "$.resposta_bruta",
+      "Next": "FiltrarRecomendacoes"
+    },
+    
+    "FiltrarRecomendacoes": {
+      "Type": "Pass",
+      "Comment": "Extrai as recomendações da resposta do Bedrock",
+      "Parameters": {
+        "pedido.$": "$.pedido",
+        "contexto.$": "$.contexto",
+        "bebida.$": "$.resposta_bruta.Payload.recomendacoes.bebida",
+        "local.$": "$.resposta_bruta.Payload.recomendacoes.local",
+        "experiencia.$": "$.resposta_bruta.Payload.recomendacoes.experiencia"
+      },
+      "Next": "ApresentarRecomendacoes"
+    },
+    
+    "ApresentarRecomendacoes": {
+      "Type": "Pass",
+      "Comment": "Formata a resposta final com todas as recomendações",
+      "Parameters": {
+        "mensagem": "🍽️ Para o seu {{$.pedido}}, tenho algumas recomendações especiais:\n\n🍷 {{$.bebida}}\n📍 {{$.local}}\n🎵 {{$.experiencia}}",
+        "detalhes": {
+          "pedido": "{{$.pedido}}",
+          "contexto": "{{$.contexto}}",
+          "bebida": "{{$.bebida}}",
+          "local": "{{$.local}}",
+          "experiencia": "{{$.experiencia}}"
+        }
+      },
+      "End": true
+    }
+  }
+}
