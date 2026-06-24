@@ -1,4 +1,3 @@
-```json
 {
   "Comment": "Assistente de Delivery - Recomendações com Amazon Bedrock",
   "StartAt": "CapturarPedido",
